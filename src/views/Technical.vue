@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -194,4 +193,3 @@ function viewProducts(product: string) {
     </section>
   </main>
 </template>
-```
