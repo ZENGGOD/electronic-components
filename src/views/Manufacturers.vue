@@ -1,26 +1,63 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import products from '@/data/products'
+
+interface Manufacturer {
+  id: number
+  name: string
+  shortName?: string
+  logo?: string | null
+  website?: string | null
+  description?: string | null
+  productCount?: number
+}
+
+interface ManufacturersResponse {
+  success?: boolean
+  message?: string
+  data?: Manufacturer[]
+}
 
 const router = useRouter()
 
-const manufacturers = computed(() => {
-  const map = new Map<string, number>()
+const manufacturers = ref<Manufacturer[]>([])
+const loading = ref(true)
+const error = ref('')
 
-  products.forEach((product) => {
-    const name = product.manufacturer
+async function fetchManufacturers() {
+  loading.value = true
+  error.value = ''
 
-    map.set(name, (map.get(name) || 0) + 1)
-  })
+  try {
+    const response = await fetch('http://localhost:3000/api/manufacturers')
 
-  return Array.from(map.entries())
-    .map(([name, count]) => ({
-      name,
-      count,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const result: ManufacturersResponse = await response.json()
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch manufacturers')
+    }
+
+    manufacturers.value = Array.isArray(result.data)
+      ? result.data
+      : []
+  } catch (err: unknown) {
+    console.error('Failed to fetch manufacturers:', err)
+
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = 'Failed to fetch manufacturers'
+    }
+
+    manufacturers.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 function viewManufacturer(name: string) {
   router.push({
@@ -30,6 +67,10 @@ function viewManufacturer(name: string) {
     },
   })
 }
+
+onMounted(() => {
+  fetchManufacturers()
+})
 </script>
 
 <template>
@@ -53,19 +94,64 @@ function viewManufacturer(name: string) {
 
     <!-- Manufacturers -->
     <section class="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-      <div v-if="manufacturers.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Loading -->
+      <div
+        v-if="loading"
+        class="rounded-xl border border-slate-200 bg-white p-12 text-center"
+      >
+        <p class="text-sm text-slate-500">
+          Loading manufacturers...
+        </p>
+      </div>
+
+      <!-- Error -->
+      <div
+        v-else-if="error"
+        class="rounded-xl border border-red-200 bg-white p-12 text-center"
+      >
+        <h2 class="font-semibold text-red-600">
+          Failed to load manufacturers
+        </h2>
+
+        <p class="mt-2 text-sm text-slate-500">
+          {{ error }}
+        </p>
+
+        <button
+          type="button"
+          class="mt-5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+          @click="fetchManufacturers"
+        >
+          Retry
+        </button>
+      </div>
+
+      <!-- Manufacturers -->
+      <div
+        v-else-if="manufacturers.length"
+        class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+      >
         <button
           v-for="manufacturer in manufacturers"
-          :key="manufacturer.name"
+          :key="manufacturer.id"
           type="button"
           class="group rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md"
           @click="viewManufacturer(manufacturer.name)"
         >
-          <!-- Logo placeholder -->
+          <!-- Logo -->
           <div
-            class="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white"
+            class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-slate-900 text-sm font-bold text-white"
           >
-            {{ manufacturer.name.charAt(0) }}
+            <img
+              v-if="manufacturer.logo"
+              :src="manufacturer.logo"
+              :alt="manufacturer.name"
+              class="h-full w-full object-contain"
+            />
+
+            <span v-else>
+              {{ manufacturer.name.charAt(0) }}
+            </span>
           </div>
 
           <!-- Name -->
@@ -75,7 +161,8 @@ function viewManufacturer(name: string) {
 
           <!-- Products -->
           <p class="mt-2 text-sm text-slate-500">
-            {{ manufacturer.count }} {{ $t('manufacturers.products') }}
+            {{ manufacturer.productCount ?? 0 }}
+            {{ $t('manufacturers.products') }}
           </p>
 
           <!-- Link -->

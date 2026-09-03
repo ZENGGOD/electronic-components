@@ -64,6 +64,54 @@ export default {
 
     requestQuote: '询价',
   },
+  productDetail: {
+    loading: '正在加载产品信息...',
+    notFound: '未找到产品',
+    notFoundDescription: '无法找到您请求的产品。',
+    backToProducts: '返回产品列表',
+
+    breadcrumbHome: '首页',
+    breadcrumbProducts: '产品',
+
+    product: '产品',
+
+    specifications: '产品规格',
+    specificationsDescription: '产品基本信息及采购信息。',
+
+    partNumber: '料号',
+    manufacturer: '制造商',
+    category: '类别',
+    package: '封装',
+    availability: '供货状态',
+    stock: '库存',
+
+    notSpecified: '未指定',
+    StockStatus: '有库存',
+
+    description: '产品描述',
+    noDescription: '暂无产品描述。',
+
+    technicalInformation: '技术信息',
+    technicalInformationDescription:
+      '该元器件的主要技术及产品信息。',
+
+    datasheet: '数据手册与技术文档',
+    datasheetDescription:
+      '如有制造商技术文档，可通过此处查看。',
+    viewDatasheet: '查看数据手册',
+    datasheetOnRequest: '数据手册可索取',
+
+    imageUnavailable: '暂无产品图片',
+    imageComingSoon: '产品图片即将提供。',
+
+    needPricing: '需要价格或库存信息',
+    needPricingDescription:
+      '联系我们的销售团队，获取价格、库存、交期以及批量采购支持。',
+
+    interested: '对此元器件感兴趣？',
+    inquiryDescription:
+      '请发送您的需求数量及交货要求。',
+  },
   about: {
     label: '关于我们',
 

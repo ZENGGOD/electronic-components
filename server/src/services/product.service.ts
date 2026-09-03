@@ -123,8 +123,19 @@ export async function getProducts(
    */
 
   if (query.category) {
-    conditions.push('c.name_zh = ?')
-    params.push(query.category)
+    conditions.push(`
+      (
+        c.name_zh = ?
+        OR c.name_en = ?
+        OR c.slug = ?
+      )
+    `)
+
+    params.push(
+      query.category,
+      query.category,
+      query.category,
+    )
   }
 
   const whereClause = conditions.length

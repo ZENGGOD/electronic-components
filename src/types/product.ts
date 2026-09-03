@@ -17,5 +17,5 @@ export interface Product {
 
   datasheet?: string
 
-  status: 'In Stock' | 'Available' | 'Request Quote'
+  status: 'In Stock' | 'Available' | 'Request Quote' | 'Discontinued'
 }

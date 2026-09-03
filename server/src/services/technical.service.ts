@@ -64,10 +64,22 @@ export interface TechnicalTopicDetail
 
 /**
  * 获取技术主题列表
+ *
+ * 返回：
+ * - 技术主题
+ * - 分类
+ * - 关联产品
+ * - 关联标签
  */
 export async function getTechnicalTopics(): Promise<
-  TechnicalTopicRow[]
+  TechnicalTopicDetail[]
 > {
+  /**
+   * ───────────────────────────────────────────────────────────────────────────
+   * 1. 获取技术主题
+   * ───────────────────────────────────────────────────────────────────────────
+   */
+
   const sql = `
     SELECT
       id,
@@ -99,7 +111,151 @@ export async function getTechnicalTopics(): Promise<
   const [rows] =
     await pool.query<TechnicalTopicRow[]>(sql)
 
-  return rows
+  /**
+   * ───────────────────────────────────────────────────────────────────────────
+   * 2. 查询每个技术主题的完整数据
+   * ───────────────────────────────────────────────────────────────────────────
+   */
+
+  const topics = await Promise.all(
+    rows.map(async (topic) => {
+      /**
+       * ───────────────────────────────────────────────────────────────────────
+       * 2.1 获取分类
+       * ───────────────────────────────────────────────────────────────────────
+       */
+
+      let category: TechnicalCategoryRow | null =
+        null
+
+      if (topic.categoryId !== null) {
+        const categorySql = `
+          SELECT
+            id,
+            name_zh AS nameZh,
+            name_en AS nameEn,
+            slug
+
+          FROM categories
+
+          WHERE
+            id = ?
+            AND status = 1
+
+          LIMIT 1
+        `
+
+        const [categoryRows] =
+          await pool.query<TechnicalCategoryRow[]>(
+            categorySql,
+            [topic.categoryId],
+          )
+
+        category =
+          categoryRows.length > 0
+            ? categoryRows[0]
+            : null
+      }
+
+      /**
+       * ───────────────────────────────────────────────────────────────────────
+       * 2.2 获取关联产品
+       * ───────────────────────────────────────────────────────────────────────
+       */
+
+      const productSql = `
+        SELECT
+          p.id,
+          p.part_number AS partNumber,
+
+          p.package,
+
+          p.title_zh AS titleZh,
+          p.title_en AS titleEn,
+
+          p.description_zh AS descriptionZh,
+          p.description_en AS descriptionEn,
+
+          p.status,
+
+          m.id AS manufacturerId,
+          m.name AS manufacturer,
+
+          c.id AS categoryId,
+          c.name_zh AS category
+
+        FROM technical_topic_products tp
+
+        INNER JOIN products p
+          ON tp.product_id = p.id
+
+        INNER JOIN manufacturers m
+          ON p.manufacturer_id = m.id
+
+        INNER JOIN categories c
+          ON p.category_id = c.id
+
+        WHERE
+          tp.topic_id = ?
+          AND p.status <> 'Discontinued'
+
+        ORDER BY
+          tp.sort_order ASC,
+          p.id ASC
+      `
+
+      const [products] =
+        await pool.query<TechnicalProductRow[]>(
+          productSql,
+          [topic.id],
+        )
+
+      /**
+       * ───────────────────────────────────────────────────────────────────────
+       * 2.3 获取关联标签
+       * ───────────────────────────────────────────────────────────────────────
+       */
+
+      const tagSql = `
+        SELECT
+          tg.id,
+          tg.name_zh AS name,
+          tg.slug
+
+        FROM technical_topic_tags tt
+
+        INNER JOIN tags tg
+          ON tt.tag_id = tg.id
+
+        WHERE
+          tt.topic_id = ?
+
+        ORDER BY
+          tg.id ASC
+      `
+
+      const [tags] =
+        await pool.query<TechnicalTagRow[]>(
+          tagSql,
+          [topic.id],
+        )
+
+      /**
+       * ───────────────────────────────────────────────────────────────────────
+       * 2.4 返回完整技术主题
+       * ───────────────────────────────────────────────────────────────────────
+       */
+
+      return {
+        ...topic,
+        category,
+        products,
+        tags,
+      }
+    }),
+  )
+
+  return topics
 }
 
 /**
@@ -108,6 +264,12 @@ export async function getTechnicalTopics(): Promise<
 export async function getTechnicalTopicBySlug(
   slug: string,
 ): Promise<TechnicalTopicDetail | null> {
+  /**
+   * ───────────────────────────────────────────────────────────────────────────
+   * 1. 获取技术主题
+   * ───────────────────────────────────────────────────────────────────────────
+   */
+
   const topicSql = `
     SELECT
       t.id,
@@ -149,9 +311,13 @@ export async function getTechnicalTopicBySlug(
   const topic = topicRows[0]
 
   /**
-   * 获取分类
+   * ───────────────────────────────────────────────────────────────────────────
+   * 2. 获取分类
+   * ───────────────────────────────────────────────────────────────────────────
    */
-  let category: TechnicalCategoryRow | null = null
+
+  let category: TechnicalCategoryRow | null =
+    null
 
   if (topic.categoryId !== null) {
     const categorySql = `
@@ -183,8 +349,11 @@ export async function getTechnicalTopicBySlug(
   }
 
   /**
-   * 获取关联产品
+   * ───────────────────────────────────────────────────────────────────────────
+   * 3. 获取关联产品
+   * ───────────────────────────────────────────────────────────────────────────
    */
+
   const productSql = `
     SELECT
       p.id,
@@ -233,8 +402,11 @@ export async function getTechnicalTopicBySlug(
     )
 
   /**
-   * 获取关联标签
+   * ───────────────────────────────────────────────────────────────────────────
+   * 4. 获取关联标签
+   * ───────────────────────────────────────────────────────────────────────────
    */
+
   const tagSql = `
     SELECT
       tg.id,
@@ -258,6 +430,12 @@ export async function getTechnicalTopicBySlug(
       tagSql,
       [topic.id],
     )
+
+  /**
+   * ───────────────────────────────────────────────────────────────────────────
+   * 5. 返回技术主题详情
+   * ───────────────────────────────────────────────────────────────────────────
+   */
 
   return {
     ...topic,

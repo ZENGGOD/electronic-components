@@ -65,6 +65,59 @@ export default {
     requestQuote: 'Request Quote',
   },
 
+  productDetail: {
+    loading: 'Loading product information...',
+    notFound: 'Product Not Found',
+    notFoundDescription:
+      'The requested product could not be found.',
+    backToProducts: 'Back to Products',
+
+    breadcrumbHome: 'Home',
+    breadcrumbProducts: 'Products',
+
+    product: 'Product',
+
+    specifications: 'Product Specifications',
+    specificationsDescription:
+      'Basic product and ordering information.',
+
+    partNumber: 'Part Number',
+    manufacturer: 'Manufacturer',
+    category: 'Category',
+    package: 'Package',
+    availability: 'Availability',
+    stock: 'Stock',
+
+    notSpecified: 'Not specified',
+    StockStatus: 'In stock',
+
+    description: 'Product Description',
+    noDescription:
+      'No product description is available yet.',
+
+    technicalInformation: 'Technical Information',
+    technicalInformationDescription:
+      'Key technical and product information available for this component.',
+
+    datasheet: 'Datasheet & Documentation',
+    datasheetDescription:
+      "Access the manufacturer's technical documentation when available.",
+    viewDatasheet: 'View Datasheet',
+    datasheetOnRequest: 'Datasheet on Request',
+
+    imageUnavailable: 'Product image unavailable',
+    imageComingSoon:
+      'Product image will be available soon.',
+
+    needPricing: 'Need pricing or availability?',
+    needPricingDescription:
+      'Contact our sales team for pricing, stock availability, lead time and bulk purchasing requirements.',
+
+    interested: 'Interested in this component?',
+    inquiryDescription:
+      'Send us your required quantity and delivery requirements.',
+  },
+
   about: {
     label: 'About Us',
 
