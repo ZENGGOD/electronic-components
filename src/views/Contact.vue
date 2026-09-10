@@ -2,6 +2,8 @@
 import { reactive, ref } from 'vue'
 
 const submitted = ref(false)
+const submitting = ref(false)
+const submitError = ref('')
 
 const form = reactive({
   name: '',
@@ -12,12 +14,109 @@ const form = reactive({
   message: '',
 })
 
-function submitContact() {
-  console.log('Contact Request:', {
-    ...form,
-  })
+async function submitContact() {
+  // 防止重复提交
+  if (submitting.value) {
+    return
+  }
 
-  submitted.value = true
+  submitError.value = ''
+  submitting.value = true
+
+  try {
+    const response = await fetch(
+      '/api/contact',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+
+          company:
+            form.company.trim() || null,
+
+          business_email:
+            form.email.trim(),
+
+          phone_whatsapp:
+            form.phone.trim() || null,
+
+          subject:
+            form.subject.trim() || null,
+
+          message:
+            form.message.trim(),
+        }),
+      },
+    )
+
+    const contentType =
+      response.headers.get('content-type') || ''
+
+    const responseText =
+      await response.text()
+
+    let result: {
+      success?: boolean
+      message?: string
+      data?: unknown
+    } | null = null
+
+    // 必须确认后端返回 JSON
+    if (
+      contentType.includes(
+        'application/json',
+      )
+    ) {
+      try {
+        result = JSON.parse(responseText)
+      } catch {
+        throw new Error(
+          '服务器返回的数据格式错误',
+        )
+      }
+    } else {
+      console.error(
+        'Contact API returned non-JSON response:',
+        responseText,
+      )
+
+      throw new Error(
+        '服务器返回了非 JSON 数据，请检查 API 地址或 Vite 代理配置',
+      )
+    }
+
+    // HTTP 状态码异常或者后端明确返回失败
+    if (
+      !response.ok ||
+      result?.success === false
+    ) {
+      throw new Error(
+        result?.message ||
+          `提交失败（HTTP ${response.status}）`,
+      )
+    }
+
+    // 提交成功
+    submitted.value = true
+  } catch (error) {
+    console.error(
+      'Contact submission failed:',
+      error,
+    )
+
+    if (error instanceof Error) {
+      submitError.value = error.message
+    } else {
+      submitError.value =
+        '留言提交失败，请稍后重试'
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -129,6 +228,14 @@ function submitContact() {
               {{ $t('contact.formDescription') }}
             </p>
 
+            <!-- Submit Error -->
+            <div
+              v-if="submitError"
+              class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+            >
+              {{ submitError }}
+            </div>
+
             <div class="mt-6 grid gap-6 sm:grid-cols-2">
               <!-- Name -->
               <div>
@@ -228,9 +335,14 @@ function submitContact() {
             <div class="mt-8 flex justify-end border-t border-slate-200 pt-6">
               <button
                 type="submit"
-                class="rounded-lg bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                :disabled="submitting"
+                class="rounded-lg bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {{ $t('contact.send') }}
+                {{
+                  submitting
+                    ? 'Sending...'
+                    : $t('contact.send')
+                }}
               </button>
             </div>
           </form>

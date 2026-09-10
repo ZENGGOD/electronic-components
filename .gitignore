@@ -42,3 +42,10 @@ __screenshots__/
 .env
 .env.*
 !.env.example
+/server/uploads/
+
+# Generated password script files
+/server/src/scripts/generate-password.js
+/server/src/scripts/generate-password.js.map
+/server/src/scripts/generate-password.d.ts
+/server/src/scripts/generate-password.d.ts.map
